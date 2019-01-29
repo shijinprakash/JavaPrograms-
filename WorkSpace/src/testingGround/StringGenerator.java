@@ -10,9 +10,9 @@ public class StringGenerator {
 	private String[] specialCharacters = {"@","%","+","!","#","$","^","?",":",".","(",")","{","}","[","]","~","-","_","."};
 	int passwordLength = 7;
 	
-	String[] password = new String[7];
+	String[] password = new String[8];
 	
-	String[] selector = new String[]{"lowerAlphaArray","numbers","specialCharacters"};
+	String[] selector = new String[]{"upperAlphaArray","lowerAlphaArray","numbers","specialCharacters"};
 	
 	/*
 	 * To Be Activated while populating options
@@ -25,43 +25,55 @@ public class StringGenerator {
 	
 	
 	
-	public String generatorMethod(){
+	public void generatorMethod(){
 		
 		Random randomUAlpha = new Random();
 		int letter = randomUAlpha.nextInt(upperAlphaArray.length);
 		char randomUpperAlpha = upperAlphaArray[letter];
 		
 		password[0] = Character.toString(randomUpperAlpha);
+		//System.out.println(password[0]);
 		
 		
-		for (int i = 1; i < 6 ; i++){
+		for (int i = 1; i <= passwordLength ; i++){
 			
 			
 			String randomPick = selector[new Random().nextInt(selector.length)];
 			
 			
-			
-			if (randomPick == "lowerAlphaArray"){
+			if (randomPick == "upperAlphaArray"){
+				randomUpperAlpha = upperAlphaArray[new Random().nextInt(upperAlphaArray.length)];
+				password[i] = Character.toString(randomUpperAlpha);
+				//System.out.println(password[i]);
+			}
+			else if (randomPick == "lowerAlphaArray"){
 				char randomLowerAlpha = lowerAlphaArray[new Random().nextInt(lowerAlphaArray.length)];
 				password[i] = Character.toString(randomLowerAlpha);
+				//System.out.println(password[i]);
 			}
 			else if (randomPick == "numbers"){
 				char randomNumber = numbers[new Random().nextInt(numbers.length)];
 				password[i] = Character.toString(randomNumber);
+				//System.out.println(password[i]);
 			}
 			else if (randomPick == "specialCharacters"){
 				String randomSpecialCharacters = specialCharacters[new Random().nextInt(specialCharacters.length)];
 				password[i] = randomSpecialCharacters;
+				//System.out.println(password[i]);
 			}
 		}
 		
-		return password.toString();
+		for(String s : password) {
+			System.out.print(s);
+		}
+		//return password.toString();
 	}
 	
 	
 	public static void main(String[] args) {
 		StringGenerator generator = new StringGenerator();
 		generator.generatorMethod();
+		//System.out.println(generator.password);
 	}
 
 }
