@@ -36,40 +36,44 @@ public class StringGenerator {
 		password[0] = Character.toString(randomUpperAlpha);
 		//System.out.println(password[0]);
 		
+		do {
+			for (int i = 1; i <= passwordLength ; i++){
+				
+				
+				String randomPick = selector[new Random().nextInt(selector.length)];
+				
+				
+				if (randomPick == "upperAlphaArray"){
+					randomUpperAlpha = upperAlphaArray[new Random().nextInt(upperAlphaArray.length)];
+					password[i] = Character.toString(randomUpperAlpha);
+					//System.out.println(password[i]);
+				}
+				else if (randomPick == "lowerAlphaArray"){
+					char randomLowerAlpha = lowerAlphaArray[new Random().nextInt(lowerAlphaArray.length)];
+					password[i] = Character.toString(randomLowerAlpha);
+					//System.out.println(password[i]);
+				}
+				else if (randomPick == "numbers"){
+					char randomNumber = numbers[new Random().nextInt(numbers.length)];
+					password[i] = Character.toString(randomNumber);
+					//System.out.println(password[i]);
+				}
+				else if (randomPick == "specialCharacters"){
+					String randomSpecialCharacters = specialCharacters[new Random().nextInt(specialCharacters.length)];
+					password[i] = randomSpecialCharacters;
+					//System.out.println(password[i]);
+				}
+			}
 		
-		for (int i = 1; i <= passwordLength ; i++){
-			
-			
-			String randomPick = selector[new Random().nextInt(selector.length)];
-			
-			
-			if (randomPick == "upperAlphaArray"){
-				randomUpperAlpha = upperAlphaArray[new Random().nextInt(upperAlphaArray.length)];
-				password[i] = Character.toString(randomUpperAlpha);
-				//System.out.println(password[i]);
-			}
-			else if (randomPick == "lowerAlphaArray"){
-				char randomLowerAlpha = lowerAlphaArray[new Random().nextInt(lowerAlphaArray.length)];
-				password[i] = Character.toString(randomLowerAlpha);
-				//System.out.println(password[i]);
-			}
-			else if (randomPick == "numbers"){
-				char randomNumber = numbers[new Random().nextInt(numbers.length)];
-				password[i] = Character.toString(randomNumber);
-				//System.out.println(password[i]);
-			}
-			else if (randomPick == "specialCharacters"){
-				String randomSpecialCharacters = specialCharacters[new Random().nextInt(specialCharacters.length)];
-				password[i] = randomSpecialCharacters;
-				//System.out.println(password[i]);
+		
+		
+			for(String s : password) {
+				//System.out.print(s);
+				generatedPassword.append(s);
+				
 			}
 		}
-		
-		for(String s : password) {
-			//System.out.print(s);
-			generatedPassword.append(s);
-			
-		}
+		while((generatedPassword.toString().contains(upperAlphaArray.toString())) || (generatedPassword.toString().contains(lowerAlphaArray.toString())) || (generatedPassword.toString().contains(numbers.toString())) || (generatedPassword.toString().contains(specialCharacters.toString())));
 		return generatedPassword.toString();
 	}
 	
