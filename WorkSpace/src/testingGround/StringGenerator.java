@@ -10,7 +10,7 @@ public class StringGenerator {
 	private String[] specialCharacters = {"@","%","+","!","#","$","^","?",":",".","(",")","{","}","[","]","~","-","_","."};
 	int passwordLength = 7;
 	
-	String[] password = new String[8];
+	String[] password = new String[7];
 	
 	String[] selector = new String[]{"lowerAlphaArray","numbers","specialCharacters"};
 	
@@ -34,7 +34,7 @@ public class StringGenerator {
 		password[0] = Character.toString(randomUpperAlpha);
 		
 		
-		for (int i = 1; i < passwordLength ; i++){
+		for (int i = 1; i < 6 ; i++){
 			
 			
 			String randomPick = selector[new Random().nextInt(selector.length)];
