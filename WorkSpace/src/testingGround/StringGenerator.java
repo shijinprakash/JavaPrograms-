@@ -1,6 +1,5 @@
 package testingGround;
 
-import java.util.ArrayList;
 import java.util.Random;
 
 public class StringGenerator {
