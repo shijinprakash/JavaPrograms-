@@ -1,5 +1,6 @@
 package testingGround;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 public class StringGenerator {
@@ -9,6 +10,8 @@ public class StringGenerator {
 	private char[] numbers = {'0','1','2','3','4','5','6','7','8','9'};
 	private String[] specialCharacters = {"@","%","+","!","#","$","^","?",":",".","(",")","{","}","[","]","~","-","_","."};
 	int passwordLength = 7;
+	
+	StringBuffer generatedPassword = new StringBuffer();
 	
 	String[] password = new String[8];
 	
@@ -25,7 +28,7 @@ public class StringGenerator {
 	
 	
 	
-	public void generatorMethod(){
+	public String generatorMethod(){
 		
 		Random randomUAlpha = new Random();
 		int letter = randomUAlpha.nextInt(upperAlphaArray.length);
@@ -64,16 +67,18 @@ public class StringGenerator {
 		}
 		
 		for(String s : password) {
-			System.out.print(s);
+			//System.out.print(s);
+			generatedPassword.append(s);
+			
 		}
-		//return password.toString();
+		return generatedPassword.toString();
 	}
 	
 	
 	public static void main(String[] args) {
 		StringGenerator generator = new StringGenerator();
 		generator.generatorMethod();
-		//System.out.println(generator.password);
+		System.out.println(generator.generatedPassword);
 	}
 
 }
