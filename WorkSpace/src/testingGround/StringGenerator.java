@@ -8,11 +8,17 @@ public class StringGenerator {
 	private char[] lowerAlphaArray = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'};
 	private char[] numbers = {'0','1','2','3','4','5','6','7','8','9'};
 	private String[] specialCharacters = {"@","%","+","!","#","$","^","?",":",".","(",")","{","}","[","]","~","-","_","."};
-	int passwordLength = 7;
+	int passwordLength = 8;
+	boolean lowerFlag = false;
+	boolean numberFlag = false;
+	boolean specialCharacterFlag = false;
+	boolean conditionFlag = false;
 	
 	StringBuffer generatedPassword = new StringBuffer();
+	StringBuffer upperAlphaSB = new StringBuffer();
 	
-	String[] password = new String[8];
+	
+	String[] password = new String[passwordLength];
 	
 	String[] selector = new String[]{"upperAlphaArray","lowerAlphaArray","numbers","specialCharacters"};
 	
@@ -36,8 +42,11 @@ public class StringGenerator {
 		password[0] = Character.toString(randomUpperAlpha);
 		//System.out.println(password[0]);
 		
+		
+		
+		
 		do {
-			for (int i = 1; i <= passwordLength ; i++){
+			for (int i = 1; i <= passwordLength - 1 ; i++){
 				
 				
 				String randomPick = selector[new Random().nextInt(selector.length)];
@@ -64,7 +73,51 @@ public class StringGenerator {
 					//System.out.println(password[i]);
 				}
 			}
-		
+			
+			for(int x = 1; x<passwordLength; x++){
+				
+			char[] passChar = password[x].toCharArray();
+			
+			
+			
+			
+				for(int i = 0; i<passChar.length; i++){
+					
+					if(lowerFlag == false){
+						for(int j=0; j<lowerAlphaArray.length; j++){
+							if(passChar[i] == lowerAlphaArray[j]){
+								//System.out.println("lower char found " + passChar[i]);
+								lowerFlag = true;
+								break;
+							}
+						}
+					}
+					if (numberFlag == false){
+						for(int j=0; j<numbers.length; j++){
+							if(passChar[i] == numbers[j]){
+								//System.out.println("number found " + passChar[i]);
+								numberFlag = true;
+								break;
+							}
+						}
+					}
+					if (specialCharacterFlag == false){
+						for(int j=0; j<specialCharacters.length; j++){
+							if(Character.toString(passChar[i]).equals(specialCharacters[j])){
+								//System.out.println("specialCharacter found " + passChar[i]);
+								specialCharacterFlag = true;
+								break;
+							}
+						}
+					}
+				}
+				
+				if (lowerFlag == true && numberFlag == true && specialCharacterFlag == true){
+					conditionFlag = true;
+				}
+			}
+			
+		}while(conditionFlag == false);
 		
 		
 			for(String s : password) {
@@ -72,8 +125,7 @@ public class StringGenerator {
 				generatedPassword.append(s);
 				
 			}
-		}
-		while((generatedPassword.toString().contains(upperAlphaArray.toString())) || (generatedPassword.toString().contains(lowerAlphaArray.toString())) || (generatedPassword.toString().contains(numbers.toString())) || (generatedPassword.toString().contains(specialCharacters.toString())));
+			
 		return generatedPassword.toString();
 	}
 	
