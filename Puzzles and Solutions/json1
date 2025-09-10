@@ -1,0 +1,88 @@
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.*;
+
+public class JsonFlattenerProgram {
+
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    public static void main(String[] args) throws Exception {
+        // Step 1: Load the full nested JSON (as a String for demo, replace with your POJO if needed)
+        String json = "{ \"user\": [ { \"name\": { \"firstName\": \"Alice\", \"middleName\": \"Marie\", \"lastName\": \"Johnson\", \"title\": \"Ms.\" }, \"phone\": { \"landLine\": \"+1-555-101010\", \"mobile\": [ { \"mobileNumber\": \"+1-555-202020\", \"details\": { \"type\": \"personal\", \"provider\": \"Verizon\", \"countryCode\": \"+1\", \"activatedOn\": \"2023-05-01\" } }, { \"mobileNumber\": \"+1-555-303030\", \"details\": { \"type\": \"office\", \"provider\": \"AT&T\", \"countryCode\": \"+1\", \"activatedOn\": \"2022-11-15\" } } ] }, \"email\": { \"emailIds\": [ { \"idType\": \"personal\", \"emailId\": \"alice.johnson@example.com\", \"usedIn\": { \"personal\": \"yes\", \"official\": \"no\", \"marketing\": \"yes\" }, \"verified\": true, \"addedOn\": \"2023-01-10\" }, { \"idType\": \"office\", \"emailId\": \"alice.j@company.com\", \"usedIn\": { \"personal\": \"no\", \"official\": \"yes\", \"marketing\": \"no\" }, \"verified\": true, \"addedOn\": \"2022-08-23\" } ] } }, { \"name\": { \"firstName\": \"Robert\", \"middleName\": \"Lee\", \"lastName\": \"Smith\", \"title\": \"Dr.\" }, \"phone\": { \"landLine\": \"+44-20-7946-0000\", \"mobile\": [ { \"mobileNumber\": \"+44-7700-900123\", \"details\": { \"type\": \"personal\", \"provider\": \"O2\", \"countryCode\": \"+44\", \"activatedOn\": \"2021-07-12\" } }, { \"mobileNumber\": \"+44-7700-900456\", \"details\": { \"type\": \"office\", \"provider\": \"Vodafone\", \"countryCode\": \"+44\", \"activatedOn\": \"2020-04-19\" } }, { \"mobileNumber\": \"+44-7700-900789\", \"details\": { \"type\": \"emergency\", \"provider\": \"EE\", \"countryCode\": \"+44\", \"activatedOn\": \"2019-12-01\" } } ] }, \"email\": { \"emailIds\": [ { \"idType\": \"personal\", \"emailId\": \"robert.smith@hotmail.com\", \"usedIn\": { \"personal\": \"yes\", \"official\": \"no\", \"marketing\": \"yes\" }, \"verified\": false, \"addedOn\": \"2021-02-10\" }, { \"idType\": \"office\", \"emailId\": \"robert.s@university.edu\", \"usedIn\": { \"personal\": \"no\", \"official\": \"yes\", \"marketing\": \"no\" }, \"verified\": true, \"addedOn\": \"2020-09-15\" }, { \"idType\": \"alternate\", \"emailId\": \"r.smith@altmail.com\", \"usedIn\": { \"personal\": \"yes\", \"official\": \"no\", \"marketing\": \"no\" }, \"verified\": false, \"addedOn\": \"2023-12-05\" } ] } } ] }";
+
+        JsonNode root = mapper.readTree(json);
+
+        // Step 2: Config input (unique keys and ignored fields)
+        Set<String> ignoreFields = new HashSet<>(Arrays.asList("title", "landLine"));
+        Map<String, List<String>> uniqueKeys = new HashMap<>();
+        uniqueKeys.put("emailIds", List.of("emailId"));
+        uniqueKeys.put("mobile", List.of("mobileNumber"));
+
+        // Step 3: Flatten
+        Map<String, Object> flattened = new LinkedHashMap<>();
+        flattenJson("", root, flattened, ignoreFields, uniqueKeys);
+
+        // Step 4: Output
+        flattened.forEach((k, v) -> System.out.println(k + " = " + v));
+    }
+
+    public static void flattenJson(String currentPath, JsonNode node,
+                                   Map<String, Object> result,
+                                   Set<String> ignoreFields,
+                                   Map<String, List<String>> uniqueKeys) {
+
+        if (node == null || node.isNull()) {
+            result.put(currentPath, null);
+            return;
+        }
+
+        if (node.isObject()) {
+            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> field = fields.next();
+                String fieldName = field.getKey();
+                JsonNode fieldValue = field.getValue();
+
+                if (ignoreFields != null && ignoreFields.contains(fieldName)) {
+                    continue; // skip ignored field
+                }
+
+                String newPath = currentPath.isEmpty() ? fieldName : currentPath + "." + fieldName;
+                flattenJson(newPath, fieldValue, result, ignoreFields, uniqueKeys);
+            }
+
+        } else if (node.isArray()) {
+            String arrayName = getLastPathSegment(currentPath);
+            for (int i = 0; i < node.size(); i++) {
+                JsonNode item = node.get(i);
+                String identifier;
+
+                if (uniqueKeys.containsKey(arrayName)) {
+                    List<String> keys = uniqueKeys.get(arrayName);
+                    List<String> keyValues = new ArrayList<>();
+                    for (String k : keys) {
+                        JsonNode keyNode = item.get(k);
+                        String keyVal = (keyNode != null && !keyNode.isNull()) ? keyNode.asText() : "null";
+                        keyValues.add(k + ":" + keyVal);
+                    }
+                    identifier = "[" + String.join(",", keyValues) + "]";
+                } else {
+                    identifier = "[" + i + "]";
+                }
+
+                String newPath = currentPath + identifier;
+                flattenJson(newPath, item, result, ignoreFields, uniqueKeys);
+            }
+
+        } else {
+            result.put(currentPath, node.asText());
+        }
+    }
+
+    private static String getLastPathSegment(String path) {
+        if (path == null || path.isEmpty()) return "";
+        String[] parts = path.split("\\.");
+        return parts[parts.length - 1].replaceAll("\\[.*\\]", "");
+    }
+}
