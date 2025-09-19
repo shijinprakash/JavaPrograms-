@@ -15,13 +15,13 @@ public class JsonFlattenerProgram {
 
         // Step 2: Define ignoreFields with normalized full path to parent object
         Map<String, List<String>> ignoreFields = new HashMap<>();
-        ignoreFields.put("user.name", List.of("title"));
-        ignoreFields.put("user.phone", List.of("landLine"));
+        ignoreFields.put("user/name", List.of("title"));
+        ignoreFields.put("user/phone", List.of("landLine"));
 
         // Step 3: Define uniqueKeys with normalized full path to parent array
         Map<String, List<String>> uniqueKeys = new HashMap<>();
-        uniqueKeys.put("user.phone.mobile", List.of("mobileNumber", "details.type"));
-        uniqueKeys.put("user.email.emailIds", List.of("emailId"));
+        uniqueKeys.put("user/phone/mobile", List.of("mobileNumber", "details/type"));
+        uniqueKeys.put("user/email/emailIds", List.of("emailId"));
 
         // Step 4: Flatten
         Map<String, Object> flattened = new LinkedHashMap<>();
@@ -41,7 +41,8 @@ public class JsonFlattenerProgram {
             return;
         }
 
-        String normalizedParent = normalizePath(currentPath);
+        // Normalized path for ignoreFields (slash-separated)
+        String normalizedParent = normalizePath(currentPath, "/");
 
         if (node.isObject()) {
             List<String> fieldsToIgnore = ignoreFields.getOrDefault(normalizedParent, Collections.emptyList());
@@ -54,7 +55,7 @@ public class JsonFlattenerProgram {
                     continue;
                 }
 
-                String newPath = currentPath.isEmpty() ? fieldName : currentPath + "." + fieldName;
+                String newPath = currentPath.isEmpty() ? fieldName : currentPath + "/" + fieldName; // Change dot to slash
                 flattenJson(newPath, field.getValue(), result, ignoreFields, uniqueKeys);
             }
 
@@ -86,14 +87,14 @@ public class JsonFlattenerProgram {
         }
     }
 
-    // Remove array index and identifier details
-    private static String normalizePath(String path) {
-        return path.replaceAll("\\[[^\\]]*\\]", "");
+    // Normalize the path to a slash-separated path
+    private static String normalizePath(String path, String separator) {
+        return path.replaceAll("\\[[^\\]]*\\]", "").replace(".", separator);
     }
 
     // Get the value at a dot-separated nested path
     private static JsonNode getValueAtPath(JsonNode node, String path) {
-        String[] parts = path.split("\\.");
+        String[] parts = path.split("/");
         JsonNode current = node;
         for (String part : parts) {
             if (current != null && current.has(part)) {
@@ -107,7 +108,7 @@ public class JsonFlattenerProgram {
 
     private static String getLastPathSegment(String path) {
         if (path == null || path.isEmpty()) return "";
-        String[] parts = path.split("\\.");
+        String[] parts = path.split("/");
         return parts[parts.length - 1].replaceAll("\\[.*\\]", "");
     }
 }
