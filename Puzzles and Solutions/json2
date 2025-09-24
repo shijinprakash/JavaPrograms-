@@ -8,28 +8,23 @@ public class JsonFlattenerProgram {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     public static void main(String[] args) throws Exception {
-        // Step 1: Load JSON string
-        String json = "{\"organization\":{\"name\":\"TechCorp Global\",\"established_year\":1998,\"departments\":[{\"dept_id\":\"D001\",\"name\":\"Research & Development\",\"head\":\"Ella Vance\",\"employees\":[{\"emp_id\":\"E101\",\"full_name\":\"Alice Johnson\",\"role\":\"Lead Developer\",\"contact\":{\"email\":\"alice.j@techcorp.com\",\"phone\":\"555-123-4567\"},\"skills\":[\"Java\",\"Python\",\"Cloud Computing\"],\"performance_reviews\":[{\"date\":\"2024-03-15\",\"score\":92,\"notes\":\"Excellent performance on Project A.\"},{\"date\":\"2025-03-15\",\"score\":95,\"notes\":\"Led team effectively on Project B.\"}]}],\"active_projects\":[{\"project_id\":\"P501\",\"project_name\":\"Quantum AI Initiative\",\"team_lead_id\":\"E101\",\"status\":\"In Progress\"}]},{\"dept_id\":\"D002\",\"name\":\"Marketing\",\"head\":\"Mark Chen\",\"employees\":[{\"emp_id\":\"E201\",\"full_name\":\"Sarah Davis\",\"role\":\"Marketing Manager\",\"contact\":{\"email\":\"sarah.d@techcorp.com\",\"phone\":\"555-444-5555\"},\"skills\":[\"SEO\",\"Content Strategy\"],\"performance_reviews\":[{\"date\":\"2025-02-10\",\"score\":88,\"notes\":\"Successful social media campaign launch.\"}]}],\"active_projects\":[]}],\"projects\":[{\"project_id\":\"P501\",\"project_name\":\"Quantum AI Initiative\",\"budget_usd\":5000000,\"team_members\":[\"E101\",\"E102\"],\"milestones\":\"[{\\\"id\\\":\\\"M1\\\",\\\"name\\\":\\\"Phase 1 Complete\\\"},{\\\"id\\\":\\\"M2\\\",\\\"name\\\":\\\"Algorithm Test\\\"}]\"},{\"project_id\":\"P502\",\"project_name\":\"Global Market Expansion\",\"budget_usd\":1200000,\"team_members\":[\"E201\"],\"milestones\":\"[{\\\"id\\\":\\\"M1\\\",\\\"name\\\":\\\"Market Research\\\"},{\\\"id\\\":\\\"M2\\\",\\\"name\\\":\\\"Campaign Launch\\\"}]\"}]}}";
+        String json = "{\"users\": [{\"id\": 101, \"name\": \"Alice\", \"details\": {\"type\": \"admin\"}, \"phoneNumber\": [\"123123123\", \"789789789\"], \"roles\": [{\"roleId\": 1, \"roleName\": \"manager\"}, {\"roleId\": 2, \"roleName\": \"developer\"}]} , {\"id\": 102, \"name\": \"Bob\", \"details\": {\"type\": \"user\"}, \"roles\": [{\"roleId\": 3, \"roleName\": \"tester\"}]}]}";
 
         JsonNode root = mapper.readTree(json);
 
-        // Step 2: Define ignoreFields (full path style)
+        // Define ignoreFields (dot notation)
         Map<String, List<String>> ignoreFields = new HashMap<>();
-        ignoreFields.put("employees/performance_reviews", List.of("notes"));
+        ignoreFields.put("users", List.of("name"));
 
-        // Step 3: Define uniqueKeys with array names only
+        // Define uniqueKeys with array names only (dot notation)
         Map<String, List<String>> uniqueKeys = new HashMap<>();
-        uniqueKeys.put("departments", List.of("dept_id"));
-        uniqueKeys.put("employees", List.of("emp_id"));
-        uniqueKeys.put("performance_reviews", List.of("date"));
-        uniqueKeys.put("active_projects", List.of("project_id"));
-        uniqueKeys.put("projects", List.of("project_id"));
+        uniqueKeys.put("users", List.of("id", "details.type", "roles.roleId"));
 
-        // Step 4: Flatten
+        // Flatten JSON
         Map<String, Object> flattened = new LinkedHashMap<>();
-        flattenJson("", root, flattened, ignoreFields, uniqueKeys);
+        flattenJson("", root, flattened, normaliseField(ignoreFields), normaliseField(uniqueKeys));
 
-        // Step 5: Print result
+        // Print result
         flattened.forEach((k, v) -> System.out.println(k + " = " + v));
     }
 
@@ -43,8 +38,7 @@ public class JsonFlattenerProgram {
             return;
         }
 
-        // Normalized path for ignoreFields
-        String normalizedParent = normalizePath(currentPath, "/");
+        String normalizedParent = normalizePath(currentPath);
 
         if (node.isObject()) {
             List<String> fieldsToIgnore = ignoreFields.getOrDefault(normalizedParent, Collections.emptyList());
@@ -53,9 +47,8 @@ public class JsonFlattenerProgram {
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> field = fields.next();
                 String fieldName = field.getKey();
-                if (fieldsToIgnore.contains(fieldName)) {
-                    continue;
-                }
+
+                if (fieldsToIgnore.contains(fieldName)) continue;
 
                 String newPath = currentPath.isEmpty() ? fieldName : currentPath + "/" + fieldName;
                 flattenJson(newPath, field.getValue(), result, ignoreFields, uniqueKeys);
@@ -70,13 +63,18 @@ public class JsonFlattenerProgram {
                 String identifier;
 
                 if (keyFields != null) {
-                    List<String> keyValues = new ArrayList<>();
+                    List<String> keySegments = new ArrayList<>();
                     for (String keyField : keyFields) {
-                        JsonNode keyNode = getValueAtPath(item, keyField);
-                        String keyVal = (keyNode != null && !keyNode.isNull()) ? keyNode.asText() : "null";
-                        keyValues.add(keyField + ":" + keyVal);
+                        List<String> values = getValueListAtPath(item, keyField.replace(".", "/"));
+                        if (values.isEmpty()) {
+                            keySegments.add(keyField + "=null");
+                        } else {
+                            for (String val : values) {
+                                keySegments.add(keyField + "=" + val);
+                            }
+                        }
                     }
-                    identifier = "[" + String.join(",", keyValues) + "]";
+                    identifier = "[" + String.join("|", keySegments) + "]";
                 } else {
                     identifier = "[" + i + "]";
                 }
@@ -90,26 +88,57 @@ public class JsonFlattenerProgram {
         }
     }
 
-    private static String normalizePath(String path, String separator) {
-        return path.replaceAll("\\[[^\\]]*\\]", "").replace(".", separator);
+    // Utility: Normalize path (remove array indices, convert . to /)
+    private static String normalizePath(String path) {
+        return path.replaceAll("\\[[^\\]]*\\]", "").replace(".", "/");
     }
 
-    private static JsonNode getValueAtPath(JsonNode node, String path) {
-        String[] parts = path.split("/");
-        JsonNode current = node;
-        for (String part : parts) {
-            if (current != null && current.has(part)) {
-                current = current.get(part);
-            } else {
-                return null;
-            }
-        }
-        return current;
-    }
-
+    // Utility: Get last segment of path
     private static String getLastPathSegment(String path) {
         if (path == null || path.isEmpty()) return "";
         String[] parts = path.split("/");
         return parts[parts.length - 1].replaceAll("\\[.*\\]", "");
+    }
+
+    // NEW: Get list of all matching values at the given nested path
+    private static List<String> getValueListAtPath(JsonNode node, String path) {
+        String[] parts = path.split("/");
+        List<String> results = new ArrayList<>();
+        collectValues(node, parts, 0, results);
+        return results;
+    }
+
+    private static void collectValues(JsonNode node, String[] parts, int index, List<String> results) {
+        if (node == null || node.isNull()) return;
+
+        if (index == parts.length) {
+            if (node.isValueNode()) {
+                results.add(node.asText());
+            }
+            return;
+        }
+
+        String part = parts[index];
+
+        if (node.isArray()) {
+            for (JsonNode item : node) {
+                collectValues(item, parts, index, results);
+            }
+        } else if (node.has(part)) {
+            collectValues(node.get(part), parts, index + 1, results);
+        }
+    }
+
+    // Convert dot-path maps to normalized path maps
+    private static Map<String, List<String>> normaliseField(Map<String, List<String>> fieldToNormalise) {
+        Map<String, List<String>> normalisedField = new HashMap<>();
+        for (Map.Entry<String, List<String>> entry : fieldToNormalise.entrySet()) {
+            String normalizedKey = entry.getKey().replace(".", "/");
+            List<String> normalizedValue = entry.getValue().stream()
+                    .map(s -> s.replace(".", "/"))
+                    .toList();
+            normalisedField.put(normalizedKey, normalizedValue);
+        }
+        return normalisedField;
     }
 }
